@@ -17,10 +17,3 @@ is not calling back into JavaScript.
 3. In bp-pubsub/service, run sdk/bin/ServiceInstaller -f .
 4. Open bp-pubsub/test/index.html in one or more browsers.
 5. Type a message and hit send.  Not working yet, though.  
-
-## Debugging 
-
-The ruby file pubsub.rb has 
-
-## Test file
-
