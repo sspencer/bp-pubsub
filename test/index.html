@@ -20,7 +20,7 @@
 </head>
 <body>
 <p>Type a message here, and see it in any and all other browsers visiting this page (on your local computer).</p>
-<p style="color:red">Not working, yet :(</p>
+
 <textarea id="msg" rows="7" cols="60">Type your message here.</textarea>
 <div><input id="sendit" type="button" value="Send Message"></div>
 <br>
@@ -33,30 +33,25 @@
 (function() {
     var YD = YAHOO.util.Dom,
         YE = YAHOO.util.Event,
-        PS = null,
-        results = YD.get("results"),
+        result = YD.get("result"),
         msg = YD.get("msg");
 
     function receiver(val) {
-        console.log("receiver: " + YAHOO.lang.dump(val));
-        //results.innerHTML = "<div>" + YAHOO.lang.dump(val.data) + "</div>";
+        result.innerHTML = "<div>" + YAHOO.lang.dump(val) + "</div>" + result.innerHTML;
     }
 
     function sender() {
         console.log("sending: " + msg.value);
-        if (PS) {
-            PS.publish({data:{"message": msg.value}}, function(r){});
-        }
+        BrowserPlus.PublishSubscribe.publish({data:{"message": msg.value}}, function(r){});
     }
 
     BrowserPlus.init(function(res) {  
-        var services = {service: "PublishSubscribe", version: "0", minversion: "0.0.3"};
+        var services = {service: "PublishSubscribe", version: "0", minversion: "0.0.4"};
             
         if (res.success) {  
             BrowserPlus.require({ services: [ services ]}, function(r) {
                 if (r.success) {  
-                    PS = BrowserPlus.PublishSubscribe;
-                    PS.addSubscriber({subscriber: receiver}, function() {});
+                    BrowserPlus.PublishSubscribe.addSubscriber({subscriber: receiver}, function() {});
                 } else {
                     console.log("failed require: " + r.error + ", " + r.verboseError);
                 }

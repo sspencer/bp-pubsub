@@ -4,8 +4,9 @@ require "observer"
 require "pp"
 
 def dbg(o)
-	#bp_log("info", (o.class.name == "String") ? o : o.pretty_inspect)
- # File.open("/tmp/dbg.txt", 'a') { |f| f.puts((o.class.name == "String") ? o : o.pretty_inspect) }
+  msg = o.class.name == "String" ? o : o.pretty_inspect
+	bp_log("info", "PUBSUB: #{msg}")
+ # File.open("/tmp/dbg.txt", 'a') { |f| f.puts(msg) }
 end
 
 class PSData
@@ -29,14 +30,12 @@ class PubSub
     
     # create a unique id so subscribers can be removed
     @@count = 0
-    @@IDBASE = 10_000_000
   end  
   
   def addSubscriber(bp, args)
     # create unique id
     @@count += 1
-    rnd = rand(@@IDBASE) + @@IDBASE
-    id = "cb_#{@@count}_#{rnd}" 
+    id = "cb_#{@@count}" 
 
     # hash of all subscribers
     @subscribers[id] = {"topic" => args["topic"], "cb" => args["subscriber"]}
@@ -46,23 +45,10 @@ class PubSub
       PSData.instance.add_observer(self)
     end
     
-    # send back unique id
-    bp.complete(id)
+    # Remember - bp.complete() invalidates all callbacks, so we can't return anything here.
+
   end
 
-  def removeSubscriber(bp, args)
-    # save result of delete
-    r = @subscribers.delete(args["id"])
-
-    # remove ourselves as an observer if we have no more subscribers
-    if (@subscribers.count == 0)
-      PSData.instance.delete_observer(self)
-    end
-    
-    # return true if subscriber was deleted
-    bp.complete(r == 1)
-  end
-  
   def publish(bp, args)
     # publish an event
     # topic can be null here
@@ -78,10 +64,16 @@ class PubSub
       # 1: if subscriber has no topic, invoke callback
       # 2: if subscriber topic == published topic, invoke callback
       if (tp.nil? || tp == topic)
-        cb.invoke(data)
+        begin
+          dbg("invoking #{cb.pretty_inspect}")
+          cb.invoke(data)
+        rescue
+          dbg("invoke failed!")
+        end
       end
-    end
-  end
+    end 
+  end #update
+
 end  
   
   
@@ -90,14 +82,14 @@ rubyCoreletDefinition = {
   'name' => "PublishSubscribe",  
   'major_version' => 0,  
   'minor_version' => 0,  
-  'micro_version' => 3,  
+  'micro_version' => 4,  
   'documentation' => 'A Publish Subscribe that works for all BrowserPlus clients on localhost.  " + 
     "Allows you to subscribe to all messages, or just messages with a specified topic.',  
   'functions' =>  
   [  
     {  
       'name' => 'addSubscriber',  
-      'documentation' => "Subscribe to the pubsub mechanism.  The ID of the subscriber(string) is returned so you can removeSubscriber later.",
+      'documentation' => "Subscribe to the pubsub mechanism.",
       'arguments' => [  
         {  
           'name' => 'subscriber',
@@ -110,18 +102,6 @@ rubyCoreletDefinition = {
           'type' => 'string',
           'documentation' => 'Optional string that describes data topic.',
           'required' => false
-        }
-      ]
-    },
-    {
-      'name' => 'removeSubscriber',
-      'documentation' => 'Remove a subscriber.  Returns true if subscirber with that ID is removed.',
-      'arguments' => [
-        {
-          'name' => 'id',
-          'type' => 'string',
-          'documentation' => 'The ID returned from addSubscriber.',
-          'required' => true
         }
       ]
     },

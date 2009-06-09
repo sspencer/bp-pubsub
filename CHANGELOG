@@ -1,0 +1,11 @@
+Version 0.0.4
+  * Callbacks are invalidated after bp.complete(), so addSubscriber no longer returns
+    unique ID.  Delete removeSubscriber() api.
+  * Simple case works.  Tested on OS X.  Can open one or more windows in both Safari
+    and Firefox and send messages across all browsers/windows.
+  * If a window goes away, messages no longer sent.  Might have to write an
+    Observer to rescue failures.
+
+Version 0.0.3
+  * Code is mostly there, but callback is not invoked.
+
