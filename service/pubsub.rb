@@ -78,8 +78,6 @@ class PubSub
       # 1: if subscriber has no topic, invoke callback
       # 2: if subscriber topic == published topic, invoke callback
       if (tp.nil? || tp == topic)
-        mc = cb.pretty_inspect
-        dbg("Really INVOKE IT #{mc}")
         cb.invoke(data)
       end
     end
