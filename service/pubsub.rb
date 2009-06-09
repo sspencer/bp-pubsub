@@ -12,7 +12,7 @@ class PSData
   include Observable
   
   def publish(topic, data)
-    # MUST call changed here nothing is sent
+    # MUST call changed here, otherwise nothing is sent
     changed 
     notify_observers(topic, data)
   end

@@ -19,7 +19,7 @@
 </style>
 </head>
 <body>
-<p>Type a message here, and see it any and all other browsers visiting this page.</p>
+<p>Type a message here, and see it in any and all other browsers visiting this page (on your local computer).</p>
 <p style="color:red">Not working, yet :(</p>
 <textarea id="msg" rows="7" cols="60">Type your message here.</textarea>
 <div><input id="sendit" type="button" value="Send Message"></div>
@@ -44,7 +44,9 @@
 
     function sender() {
         console.log("sending: " + msg.value);
-        PS.publish({data:{"message": msg.value}}, function(r){});
+        if (PS) {
+            PS.publish({data:{"message": msg.value}}, function(r){});
+        }
     }
 
     BrowserPlus.init(function(res) {  
@@ -55,6 +57,8 @@
                 if (r.success) {  
                     PS = BrowserPlus.PublishSubscribe;
                     PS.addSubscriber({subscriber: receiver}, function() {});
+                } else {
+                    console.log("failed require: " + r.error + ", " + r.verboseError);
                 }
             });
         }
