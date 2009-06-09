@@ -1,0 +1,67 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html lang="en">
+<head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <title>Publish Subscribe</title>
+<style type="text/css" media="screen">
+
+#result {
+    background:#ddd;
+    height:200px; 
+    width:500px; 
+    overflow-y:auto;
+    font-size:8pt;
+    font-family:monospace;
+    color:black;
+    border:4px solid #999;
+}
+    
+</style>
+</head>
+<body>
+<p>Type a message here, and see it any and all other browsers visiting this page.</p>
+<p style="color:red">Not working, yet :(</p>
+<textarea id="msg" rows="7" cols="60">Type your message here.</textarea>
+<div><input id="sendit" type="button" value="Send Message"></div>
+<br>
+<p><strong>Messages Received:</strong></p>
+<div id="result"></div>
+<script type="text/javascript" src="http://yui.yahooapis.com/combo?2.7.0/build/yahoo-dom-event/yahoo-dom-event.js"></script> 
+<script type="text/javascript" src="http://bp.yahooapis.com/2.3.1/browserplus-min.js"></script>  
+<script type="text/javascript">  
+
+(function() {
+    var YD = YAHOO.util.Dom,
+        YE = YAHOO.util.Event,
+        PS = null,
+        results = YD.get("results"),
+        msg = YD.get("msg");
+
+    function receiver(val) {
+        console.log("receiver: " + YAHOO.lang.dump(val));
+        //results.innerHTML = "<div>" + YAHOO.lang.dump(val.data) + "</div>";
+    }
+
+    function sender() {
+        console.log("sending: " + msg.value);
+        PS.publish({data:{"message": msg.value}}, function(r){});
+    }
+
+    BrowserPlus.init(function(res) {  
+        var services = {service: "PublishSubscribe", version: "0", minversion: "0.0.3"};
+            
+        if (res.success) {  
+            BrowserPlus.require({ services: [ services ]}, function(r) {
+                if (r.success) {  
+                    PS = BrowserPlus.PublishSubscribe;
+                    PS.addSubscriber({subscriber: receiver}, function() {});
+                }
+            });
+        }
+    });
+    
+    YE.addListener("sendit", "click", sender);
+})();
+</script>
+</body>
+</html>
