@@ -6,7 +6,11 @@
 # is copied onto the Corelets directory via ServiceInstaller.
 
 require 'pubsub.rb'
- 
+
+def bp_log(level, msg)
+  puts "LOG(#{level}): #{msg}"
+end
+
 class BPProxy
   def complete(val)
    # puts "COMPLETE: #{val}"
