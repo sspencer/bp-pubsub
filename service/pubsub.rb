@@ -1,6 +1,4 @@
-require "socket"
 require "singleton"
-require "observer"
 require "pp"
 
 def dbg(o)
@@ -9,16 +7,41 @@ def dbg(o)
  # File.open("/tmp/dbg.txt", 'a') { |f| f.puts(msg) }
 end
 
+
 class PSData
-  include Observable
-  
+  def add_observer(observer)
+    @observer_peers = [] unless defined? @observer_peers
+    unless observer.respond_to? :update
+      raise NoMethodError, "observer needs to respond to 'update'" 
+    end
+    @observer_peers.push observer
+  end
+
+  #
+  # If this object's changed state is +true+, invoke the update method in each
+  # currently associated observer in turn, passing it the given arguments. The
+  # changed state is then set to +false+.
+  #
+  def notify_observers(*arg)
+    if defined? @observer_peers
+	    for i in @observer_peers.dup
+	      begin
+	        dbg("calling update")
+	        i.update(*arg)
+        rescue
+          dbg("update failed")
+          @observer_peers.delete i
+        end
+	    end
+    end
+  end
+
   def publish(topic, data)
-    # MUST call changed here, otherwise nothing is sent
-    changed 
     notify_observers(topic, data)
   end
-  
+
   include Singleton
+
 end
 
 
@@ -65,10 +88,10 @@ class PubSub
       # 2: if subscriber topic == published topic, invoke callback
       if (tp.nil? || tp == topic)
         begin
-          dbg("invoking #{cb.pretty_inspect}")
+#          dbg("invoking #{cb.pretty_inspect}")
           cb.invoke(data)
         rescue
-          dbg("invoke failed!")
+#          dbg("invoke failed!")
         end
       end
     end 
@@ -82,7 +105,7 @@ rubyCoreletDefinition = {
   'name' => "PublishSubscribe",  
   'major_version' => 0,  
   'minor_version' => 0,  
-  'micro_version' => 4,  
+  'micro_version' => 5,  
   'documentation' => 'A Publish Subscribe that works for all BrowserPlus clients on localhost.  " + 
     "Allows you to subscribe to all messages, or just messages with a specified topic.',  
   'functions' =>  

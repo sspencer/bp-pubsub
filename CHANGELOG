@@ -1,3 +1,7 @@
+Version 0.0.5
+  * Copy observer code into PSData so it handles case where service goes away.
+  * Add bp_log function to test.rb.
+
 Version 0.0.4
   * Callbacks are invalidated after bp.complete(), so addSubscriber no longer returns
     unique ID.  Delete removeSubscriber() api.
