@@ -13,7 +13,7 @@ Basic code:
         // val is { data: JSONObject, origin: "http://example.com"}
     }
 
-    // Listen for events that original from [www.]example.com
+    // Listen for events that originate from [www.]example.com
     // to receive all, use origin:"*"
     BrowserPlus.PublishSubscribe.addListener({
         receiver: receiver, 
