@@ -1,10 +1,11 @@
 require "singleton"
 require "pp"
+require 'uri'
 
 def dbg(o)
   msg = o.class.name == "String" ? o : o.pretty_inspect
-	bp_log("info", "PUBSUB: #{msg}")
- # File.open("/tmp/dbg.txt", 'a') { |f| f.puts(msg) }
+	#bp_log("info", "PUBSUB: #{msg}")
+  #File.open("/tmp/dbg.txt", 'a') { |f| f.puts(msg) }
 end
 
 
@@ -26,10 +27,8 @@ class PSData
     if defined? @observer_peers
 	    for i in @observer_peers.dup
 	      begin
-	        dbg("calling update")
 	        i.update(*arg)
         rescue
-          dbg("update failed")
           @observer_peers.delete i
         end
 	    end
@@ -47,6 +46,20 @@ end
 
 class PubSub
   def initialize(context)  
+    uri = URI.parse(context['uri'])
+
+    if uri.scheme == "file"
+      domain = ""
+    else
+      path_comps = uri.host.scan(/[^.]+/) # separate domain between dots ... yahoo.com into [yahoo com]
+      path_comps.unshift("www") if path_comps.length == 2 # make 'yahoo.com' into 'www.yahoo.com'
+      domain = path_comps.join(".")
+    end
+
+    @origin = "#{uri.scheme}://#{domain}"
+
+    #dbg("origin=#{@origin}")
+
     # one service instance can have multiple subscribers 
     # (could be subscribing to different topics)
     @subscribers = {}
@@ -55,94 +68,79 @@ class PubSub
     @@count = 0
   end  
   
-  def addSubscriber(bp, args)
+
+  def addListener(bp, args)
     # create unique id
     @@count += 1
     id = "cb_#{@@count}" 
 
     # hash of all subscribers
-    @subscribers[id] = {"topic" => args["topic"], "cb" => args["subscriber"]}
+    @subscribers[id] = {"origin" => args["origin"] || "*", "receiver" => args["receiver"]}
 
     # become an observer
     if (@subscribers.count == 1)
       PSData.instance.add_observer(self)
     end
-    
-    # Remember - bp.complete() invalidates all callbacks, so we can't return anything here.
-
   end
 
-  def publish(bp, args)
-    # publish an event
-    # topic can be null here
-    PSData.instance.publish(args["topic"], args["data"])
+
+  def postMessage(bp, args)
+    PSData.instance.publish(args["data"], @origin)
     bp.complete(true)
   end
 
-  def update(topic, data)
-    @subscribers.each_key do |key|
-      val = @subscribers[key]
-      tp = val["topic"]
-      cb = val["cb"]
-      # 1: if subscriber has no topic, invoke callback
-      # 2: if subscriber topic == published topic, invoke callback
-      if (tp.nil? || tp == topic)
-        begin
-#          dbg("invoking #{cb.pretty_inspect}")
-          cb.invoke(data)
-        rescue
-#          dbg("invoke failed!")
-        end
-      end
-    end 
-  end #update
 
-end  
+  def update(data, domain)
+    @subscribers.dup.each_key do |key|
+      origin = @subscribers[key]["origin"]
+      receiver = @subscribers[key]["receiver"]
+
+      if (origin == "*" || origin == domain)
+        @subscribers[key]["receiver"].invoke({"data"=> data, "origin" => domain})
+      end #if 
+
+    end #each_key
+  end #def
+
+end #class
   
   
 rubyCoreletDefinition = {  
   'class' => "PubSub",  
   'name' => "PublishSubscribe",  
   'major_version' => 0,  
-  'minor_version' => 0,  
-  'micro_version' => 5,  
-  'documentation' => 'A Publish Subscribe that works for all BrowserPlus clients on localhost.  " + 
-    "Allows you to subscribe to all messages, or just messages with a specified topic.',  
+  'minor_version' => 1,  
+  'micro_version' => 0,  
+  'documentation' => 'A cross document message service that works between web pages on one or more browsers.',
   'functions' =>  
   [  
     {  
-      'name' => 'addSubscriber',  
+      'name' => 'addListener',  
       'documentation' => "Subscribe to the pubsub mechanism.",
       'arguments' => [  
         {  
-          'name' => 'subscriber',
+          'name' => 'receiver',
           'type' => 'callback',  
-          'documentation' => 'Method that is notified of publish event.',  
+          'documentation' => 'JavaScript function that is notified of a message.  The value pass to the callback contains {data:(JSON), origin,(String)}',
           'required' => true  
         },
         {
-          'name' => 'topic',
+          'name' => 'origin',
           'type' => 'string',
-          'documentation' => 'Optional string that describes data topic.',
+          'documentation' => 'Optional string that specifies the domain ("http://example.com") to accept messages from.  Defaults to all ("*").',
           'required' => false
         }
       ]
     },
     {
-      'name' => 'publish',
-      'documentation' => 'Publish a message.',
+      'name' => 'postMessage',
+      'documentation' => 'Post a message.  The message posted is associated with the domain of the sender.  Receivers may elect to filter messages based on the domain.',
       'arguments' => [
         {
           'name' => 'data',
           'type' => 'map',
           'documentation' => 'The JSON data object that is passed to all interested subscribers.',
           'required' => true
-        },
-        {
-          'name' => 'topic',
-          'type' => 'string',
-          'documentation' => 'Optional string that describes data topic.',
-          'required' => false
         }
       ]
     }

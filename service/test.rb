@@ -27,22 +27,27 @@ class Callback
   end
   
   def invoke(val)
-    puts "CALLBACK(#{@obj}): #{val}"
+    puts "CALLBACK(#{@obj}): #{val.pretty_inspect}"
   end
 end
  
+puts "==== START ===="
+
 bp = BPProxy.new
-ps = PubSub.new([])
-cb1 = Callback.new("cb1")
-cb2 = Callback.new("cb2")
 
+p1 = PubSub.new({"uri"=>"http://www.example.com/one/two/three.html"})
+p2 = PubSub.new({"uri"=>"http://test.com/widget/index.html"})
+p3 = PubSub.new({"uri"=>"http://hello.there.com/nice.php"})
+c1 = Callback.new("callback_1")
+c2 = Callback.new("callback_2")
+c3 = Callback.new("callback_3")
 
-puts "---- START ----"
-ps.addSubscriber(bp, {'subscriber' => cb1, 'topic' => 'test'})
-ps.addSubscriber(bp, {'subscriber' => cb2})
-puts "---- ADDED SUBSCRIBERS ----"
-ps.publish(bp, {'topic' => 'test', 'data' => 'data#1'})
-ps.publish(bp, {'topic' => 'test2', 'data' => 'data#2'})
-ps.publish(bp, {'data' => 'data#3'})
-sleep 1
+p1.addListener(bp, {'receiver' => c1, 'origin' => "http://www.example.com"})
+p2.addListener(bp, {'receiver' => c2, 'origin' => "http://www.test.com"})
+p3.addListener(bp, {'receiver' => c3, 'origin' => "*"})
+
+p1.postMessage(bp, 'data' => 'data from example.com')
+p2.postMessage(bp, 'data' => 'data from test.com')
+p3.postMessage(bp, 'data' => 'data from there.com')
+
 puts "==== DONE ===="

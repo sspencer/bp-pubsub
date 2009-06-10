@@ -42,16 +42,16 @@
 
     function sender() {
         console.log("sending: " + msg.value);
-        BrowserPlus.PublishSubscribe.publish({data:{"message": msg.value}}, function(r){});
+        BrowserPlus.PublishSubscribe.postMessage({data:{"message": msg.value}}, function(r){});
     }
 
     BrowserPlus.init(function(res) {  
-        var services = {service: "PublishSubscribe", version: "0", minversion: "0.0.5"};
+        var services = {service: "PublishSubscribe", version: "0", minversion: "0.1.0"};
             
         if (res.success) {  
             BrowserPlus.require({ services: [ services ]}, function(r) {
                 if (r.success) {  
-                    BrowserPlus.PublishSubscribe.addSubscriber({subscriber: receiver}, function() {});
+                    BrowserPlus.PublishSubscribe.addListener({receiver: receiver}, function() {});
                 } else {
                     console.log("failed require: " + r.error + ", " + r.verboseError);
                 }

@@ -1,3 +1,7 @@
+Version 0.1.0
+  * API now inspired by HTMl5 cross document messaging - addListener, postMessage
+  * No more "topic" - instead, messages filtered by "origin" (domain like "http://example.com")
+
 Version 0.0.5
   * Copy observer code into PSData so it handles case where service goes away.
   * Add bp_log function to test.rb.

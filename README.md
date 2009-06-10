@@ -1,11 +1,28 @@
 # Publish Subscribe
 
-PublishSubscribe is a proof-of-concept [BrowserPlus](http://browserplus.yahoo.com/)
-service that creates a pubsub mechanism on localhost. All instances of this service
-running in the same BrowserPlusCore will be able to communicate with one another by
-passing JSON data objects. A service may register to receive only certain topics or
-everything. What this means is that different web pages in different browsers (all on
-same machine) can pass messages back and forth.
+PublishSubscribe is a proof-of-concept [BrowserPlus](http://browserplus.yahoo.com/) service lightly based on HTML5's [Cross Document Messaging](http://www.whatwg.org/specs/web-apps/current-work/#crossDocumentMessages). Web pages in different windows (different browsers even) can send messages back forth. No iframe trickery or polling required. Behind the scenes, all instances of this service run in the same BrowserPlusCore and use a Ruby singleton class to communicate.
+
+This implementation allows JSON data objects to be sent. Listeners can specify interest in all messages or only messages from a certain domain.
+
+Basic code:
+
+    // BrowserPlus is already initialized and PublishSubscribe is present
+
+    // Function that receives message events
+    function receiver(val) {
+        // val is { data: JSONObject, origin: "http://example.com"}
+    }
+
+    // Listen for events that original from [www.]example.com
+    // to receive all, use origin:"*"
+    BrowserPlus.PublishSubscribe.addListener({
+        receiver: receiver, 
+        origin:"http://example.com"
+     }, function() {});
+
+    // Send a message
+    BrowserPlus.PublishSubscribe.postMessage({data: {whatever:"you", want:2, send:"!"}});
+
 
 ## Installation
 
