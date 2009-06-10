@@ -21,7 +21,9 @@ Basic code:
      }, function() {});
 
     // Send a message
-    BrowserPlus.PublishSubscribe.postMessage({data: {whatever:"you", want:2, send:"!"}});
+    BrowserPlus.PublishSubscribe.postMessage({
+		data: {whatever:"you", want:2, send:"!"}
+	}, function(){});
 
 
 ## Installation
