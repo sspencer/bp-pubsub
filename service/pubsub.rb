@@ -109,7 +109,7 @@ rubyCoreletDefinition = {
   'class' => "PubSub",  
   'name' => "PublishSubscribe",  
   'major_version' => 0,  
-  'minor_version' => 1,  
+  'minor_version' => 2,  
   'micro_version' => 0,  
   'documentation' => 'A cross document message service that works between web pages on one or more browsers.',
   'functions' =>  
@@ -138,7 +138,7 @@ rubyCoreletDefinition = {
       'arguments' => [
         {
           'name' => 'data',
-          'type' => 'map',
+          'type' => 'any',
           'documentation' => 'The JSON data object that is passed to all interested subscribers.',
           'required' => true
         }
