@@ -1,3 +1,7 @@
+Version 0.2.0
+  * postMessage now takes "any" rather than "map" (json object)
+  * index.html demo now can send message as String, Array, or Object
+
 Version 0.1.0
   * API now inspired by HTMl5 cross document messaging - addListener, postMessage
   * No more "topic" - instead, messages filtered by "origin" (domain like "http://example.com")
