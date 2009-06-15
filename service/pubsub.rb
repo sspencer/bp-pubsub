@@ -121,7 +121,7 @@ rubyCoreletDefinition = {
         {  
           'name' => 'receiver',
           'type' => 'callback',  
-          'documentation' => 'JavaScript function that is notified of a message.  The value pass to the callback contains {data:(JSON), origin,(String)}',
+          'documentation' => 'JavaScript function that is notified of a message.  The value passed to the callback contains {data:(Any), origin:(String)}',
           'required' => true  
         },
         {

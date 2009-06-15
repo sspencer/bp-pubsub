@@ -6,14 +6,15 @@ The data argument to "postMessage" takes the BrowserPlus "any" type, meaning you
 
 Basic code:
 
-    // BrowserPlus is already initialized and PublishSubscribe is present
+    // Condition: BrowserPlus is initialized and PublishSubscribe is required
+    // See "test/index.html" for example
 
     // Function that receives message events
     function receiver(val) {
-        // val is { data: JSONObject, origin: "http://example.com"}
+        // val is { data: Any, origin: "http://example.com"}
     }
 
-    // Listen for events that originate from [www.]example.com
+    // Listen for events that originate from http://[www.]example.com
     // to receive all, use origin:"*"
     BrowserPlus.PublishSubscribe.addListener({
         receiver: receiver, 
