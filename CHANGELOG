@@ -1,3 +1,8 @@
+Version 0.2.1
+  * postMessage strips out all non "data" types ... allowing: (Object, Array, String, Boolean, 
+    Integer, Float, Boolean, Null).  In other words, strips out BrowserPlus File and Callback
+    objects.
+
 Version 0.2.0
   * postMessage now takes "any" rather than "map" (json object)
   * index.html demo now can send message as String, Array, or Object

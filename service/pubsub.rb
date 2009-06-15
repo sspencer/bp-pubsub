@@ -3,7 +3,7 @@ require "pp"
 require 'uri'
 
 def dbg(o)
-  msg = o.class.name == "String" ? o : o.pretty_inspect
+  #msg = o.class.name == "String" ? o : o.pretty_inspect
 	#bp_log("info", "PUBSUB: #{msg}")
   #File.open("/tmp/dbg.txt", 'a') { |f| f.puts(msg) }
 end
@@ -58,14 +58,15 @@ class PubSub
 
     @origin = "#{uri.scheme}://#{domain}"
 
-    #dbg("origin=#{@origin}")
-
     # one service instance can have multiple subscribers 
     # (could be subscribing to different topics)
     @subscribers = {}
     
     # create a unique id so subscribers can be removed
     @@count = 0
+
+    # unqiue object to signal data types that shouldn't be transfered through postMessage
+    @@DontCopy = Object.new
   end  
   
 
@@ -83,10 +84,41 @@ class PubSub
     end
   end
 
+  # Copies data object allowing only following types:
+  #   Hash, Array, String, Fixnum, Float, TrueClass, FalseClass
+  # Meaning that it strips out
+  #   Pathname and BPCallback
+  def dupData(data)
+    case data
+    when Hash
+      v = {}
+      data.each do |key, value|
+        dv = dupData(value)
+        v[key] = dv if (dv != @@DontCopy)
+      end
+    when Array
+      v = []
+      data.each do |value|
+        dv = dupData(value)
+        v.push(dv) if (dv != @@DontCopy)
+      end
+    when String, Fixnum, Float, TrueClass, FalseClass, NilClass
+      v = data
+    else
+      v = @@DontCopy
+    end
+
+    v
+  end
 
   def postMessage(bp, args)
-    PSData.instance.publish(args["data"], @origin)
-    bp.complete(true)
+    data = dupData(args["data"])
+    if (data == @@DontCopy)
+      bp.error("DataTransferError", "Objects of that type cannot be sent through postMessage")
+    else
+      PSData.instance.publish(data, @origin)
+      bp.complete(true)
+    end
   end
 
 
@@ -110,8 +142,9 @@ rubyCoreletDefinition = {
   'name' => "PublishSubscribe",  
   'major_version' => 0,  
   'minor_version' => 2,  
-  'micro_version' => 0,  
-  'documentation' => 'A cross document message service that works between web pages on one or more browsers.',
+  'micro_version' => 1,  
+  'documentation' => 'A cross document message service that allows JavaScript to send and receive messages between ' + 
+    'web pages within one or more browsers (cross document + cross process).',
   'functions' =>  
   [  
     {  
@@ -121,25 +154,29 @@ rubyCoreletDefinition = {
         {  
           'name' => 'receiver',
           'type' => 'callback',  
-          'documentation' => 'JavaScript function that is notified of a message.  The value passed to the callback contains {data:(Any), origin:(String)}',
+          'documentation' => 'JavaScript function that is notified of a message.  The value passed to the callback ' + 
+            'contains {data:(Any), origin:(String)}',
           'required' => true  
         },
         {
           'name' => 'origin',
           'type' => 'string',
-          'documentation' => 'Optional string that specifies the domain ("http://example.com") to accept messages from.  Defaults to all ("*").',
+          'documentation' => 'Optional string that specifies the domain ("http://example.com") to accept messages ' + 
+            'from.  Defaults to all ("*").',
           'required' => false
         }
       ]
     },
     {
       'name' => 'postMessage',
-      'documentation' => 'Post a message.  The message posted is associated with the domain of the sender.  Receivers may elect to filter messages based on the domain.',
+      'documentation' => 'Post a message.  The message posted is associated with the domain of the sender.  ' + 
+        'Receivers may elect to filter messages based on the domain.',
       'arguments' => [
         {
           'name' => 'data',
           'type' => 'any',
-          'documentation' => 'The JSON data object that is passed to all interested subscribers.',
+          'documentation' => 'The data object (Object, Array, String, Boolean, Integer, Float, Boolean, Null) that ' + 
+            'is posted to all interested subscribers.  All other data types are stripped out of the passed object.',
           'required' => true
         }
       ]

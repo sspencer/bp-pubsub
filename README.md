@@ -1,8 +1,10 @@
 # Publish Subscribe
 
-PublishSubscribe is a proof-of-concept [BrowserPlus](http://browserplus.yahoo.com/) service lightly based on HTML5's [Cross Document Messaging](http://www.whatwg.org/specs/web-apps/current-work/#crossDocumentMessages). Web pages in different windows (different browsers even) can send messages back forth. No iframe trickery or polling required. Behind the scenes, all instances of this service run in the same BrowserPlusCore and use a Ruby singleton class to communicate.
+PublishSubscribe is a proof-of-concept [BrowserPlus](http://browserplus.yahoo.com/) service based on HTML5's [Cross Document Messaging](http://www.whatwg.org/specs/web-apps/current-work/#crossDocumentMessages). Web pages in different windows (different browsers even) can send messages back forth. No iframe trickery or polling required. Behind the scenes, all instances of this service run in the same BrowserPlusCore and use a Ruby singleton class to communicate.
 
-The data argument to "postMessage" takes the BrowserPlus "any" type, meaning you can send a String, Object, Array or any other data type. Listeners can specify interest in all messages or only messages from a certain domain.
+The data argument to "postMessage" takes the BrowserPlus "any" data type, meaning you can send the following objects:  (Object, Array, String, Boolean, Integer, Float, Boolean, Null).  However the 2 other BrowserPlus types, Callbacks (JavaScript functions) and FileHandles, are stripped out.  
+
+Listeners can specify interest in all messages or only messages from a certain domain.
 
 Basic code:
 
