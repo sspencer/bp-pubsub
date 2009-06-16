@@ -2,11 +2,6 @@ require "singleton"
 require "pp"
 require 'uri'
 
-def dbg(o)
-  #msg = o.class.name == "String" ? o : o.pretty_inspect
-	#bp_log("info", "PUBSUB: #{msg}")
-  #File.open("/tmp/dbg.txt", 'a') { |f| f.puts(msg) }
-end
 
 
 class PSData
@@ -33,10 +28,6 @@ class PSData
         end
 	    end
     end
-  end
-
-  def publish(topic, data)
-    notify_observers(topic, data)
   end
 
   include Singleton
@@ -69,6 +60,12 @@ class PubSub
     @@DontCopy = Object.new
   end  
   
+  def dbg(o)
+    msg = o.class.name == "String" ? o : o.pretty_inspect
+    msg = "#{self}: #{msg}"
+	  bp_log("info", "PUBSUB: #{msg}")
+    File.open("/tmp/dbg.txt", 'a') { |f| f.puts(msg) }
+  end
 
   def addListener(bp, args)
     # create unique id
@@ -76,7 +73,7 @@ class PubSub
     id = "cb_#{@@count}" 
 
     # hash of all subscribers
-    @subscribers[id] = {"origin" => args["origin"] || "*", "receiver" => args["receiver"]}
+    @subscribers[id] = {"filter" => args["origin"] || "*", "callback" => args["receiver"]}
 
     # become an observer
     if (@subscribers.count == 1)
@@ -108,30 +105,39 @@ class PubSub
       v = @@DontCopy
     end
 
-    v
+    v # return v
   end
 
   def postMessage(bp, args)
     data = dupData(args["data"])
+    target = args["targetOrigin"]
     if (data == @@DontCopy)
       bp.error("DataTransferError", "Objects of that type cannot be sent through postMessage")
     else
-      PSData.instance.publish(data, @origin)
+      PSData.instance.notify_observers(data, @origin, target)
       bp.complete(true)
     end
   end
 
 
-  def update(data, domain)
-    @subscribers.dup.each_key do |key|
-      origin = @subscribers[key]["origin"]
-      receiver = @subscribers[key]["receiver"]
+  def update(data, msgOrigin, msgTarget)
+    # msgOrigin - where message is from
+    # msgTarget - where message should be sent (could be '*')
+    # @origin - where this client lives
 
-      if (origin == "*" || origin == domain)
-        @subscribers[key]["receiver"].invoke({"data"=> data, "origin" => domain})
-      end #if 
+    # if message is to all or to *this* client's origin
+    if (msgTarget == '*' || msgTarget == @origin)
+      # for each subscriber on *this* client
+      @subscribers.dup.each_key do |key|
+        listenerFilter = @subscribers[key]["filter"]
+        listenerCallback = @subscribers[key]["callback"]
 
-    end #each_key
+        # bonus (not HTML5) - allow client to filter here and not in JavaScript
+        if (listenerFilter == "*" || listenerFilter == msgOrigin)
+          listenerCallback.invoke({"data"=> data, "origin" => msgOrigin})
+        end #if 
+      end #each_key
+    end #if
   end #def
 
 end #class
@@ -141,8 +147,8 @@ rubyCoreletDefinition = {
   'class' => "PubSub",  
   'name' => "PublishSubscribe",  
   'major_version' => 0,  
-  'minor_version' => 2,  
-  'micro_version' => 1,  
+  'minor_version' => 3,  
+  'micro_version' => 0,  
   'documentation' => 'A cross document message service that allows JavaScript to send and receive messages between ' + 
     'web pages within one or more browsers (cross document + cross process).',
   'functions' =>  
@@ -162,7 +168,8 @@ rubyCoreletDefinition = {
           'name' => 'origin',
           'type' => 'string',
           'documentation' => 'Optional string that specifies the domain ("http://example.com") to accept messages ' + 
-            'from.  Defaults to all ("*").',
+            'from.  Defaults to all ("*").  This is not part of the HTML5 spec but allows automatic filtering of ' + 
+            'events so JavaScript listener does not have to manually check event.origin.',
           'required' => false
         }
       ]
@@ -178,6 +185,14 @@ rubyCoreletDefinition = {
           'documentation' => 'The data object (Object, Array, String, Boolean, Integer, Float, Boolean, Null) that ' + 
             'is posted to all interested subscribers.  All other data types are stripped out of the passed object.',
           'required' => true
+        },
+        {
+          'name' => 'targetOrigin',
+          'type' => 'string',
+          'documentation' => 'The origin specifies where to send the message to.  Options are either an URI like ' + 
+            '"http://example.org" or "*" to pass it to all listeners.',
+          'required' => true
+          
         }
       ]
     }

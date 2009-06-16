@@ -56,11 +56,14 @@
             data = {message: str, one: 1, yes: true, no: false};
         }
 
-        BrowserPlus.PublishSubscribe.postMessage({data:data}, function(r){});
+        BrowserPlus.PublishSubscribe.postMessage({data:data, targetOrigin: "*"}, function(r){
+            if (r.failure) {
+                alert("failed:" + r.error + " : " + r.verboseError);
+            }});
     }
 
     BrowserPlus.init(function(res) {  
-        var services = {service: "PublishSubscribe", version: "0", minversion: "0.2.1"};
+        var services = {service: "PublishSubscribe", version: "0", minversion: "0.3.0"};
             
         if (res.success) {  
             BrowserPlus.require({ services: [ services ]}, function(r) {

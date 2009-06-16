@@ -17,15 +17,20 @@ Basic code:
     }
 
     // Listen for events that originate from http://[www.]example.com
-    // to receive all, use origin:"*"
+    // to receive all, use origin:"*".
+    // Note, that "origin" in addListener is not part of HTML5.  
+    // Added as a convenience so you don't have to check in JavaScript in
+    // the receiver function.
     BrowserPlus.PublishSubscribe.addListener({
         receiver: receiver, 
-        origin:"http://example.com"
+        origin:"http://example.org"
      }, function() {});
 
-    // Send a message
+    // Send a message to ALL ("*")
+    // targetOrigin could be restricted to "http://example.org"
     BrowserPlus.PublishSubscribe.postMessage({
-		data: {whatever:"you", want:2, send:"!"}
+		data: {whatever:"you", want:2, send:"!"},
+		targetOrigin: "*"
 	}, function(){});
 
 
