@@ -1,3 +1,6 @@
+Version 0.3.1
+  * Clean up Ruby code with simplification, reorganization, and documentation
+
 Version 0.3.0
   * added mandatory "targetOrigin" to postMessge().  This sends message to listeners on 
     specified domain only.

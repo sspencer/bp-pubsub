@@ -2,9 +2,12 @@ require "singleton"
 require "pp"
 require 'uri'
 
-
-
-class PSData
+#
+# Simplified Observable module - notify observers of changed data.
+#
+class PSObservable
+  
+  # observer has to respond to "update"
   def add_observer(observer)
     @observer_peers = [] unless defined? @observer_peers
     unless observer.respond_to? :update
@@ -13,17 +16,14 @@ class PSData
     @observer_peers.push observer
   end
 
-  #
-  # If this object's changed state is +true+, invoke the update method in each
-  # currently associated observer in turn, passing it the given arguments. The
-  # changed state is then set to +false+.
-  #
+  # notify observers, removing observer from list immediately upon failure
   def notify_observers(*arg)
     if defined? @observer_peers
 	    for i in @observer_peers.dup
 	      begin
 	        i.update(*arg)
         rescue
+          # observer went away (browser window closed), so delete it
           @observer_peers.delete i
         end
 	    end
@@ -31,35 +31,37 @@ class PSData
   end
 
   include Singleton
-
 end
 
-
+# Visible to BrowserPlus
+#   addListener
+#   postMessage
 class PubSub
+
+  # Creation triggered through BrowserPlus
   def initialize(context)  
     uri = URI.parse(context['uri'])
 
     if uri.scheme == "file"
       domain = ""
     else
-      path_comps = uri.host.scan(/[^.]+/) # separate domain between dots ... yahoo.com into [yahoo com]
-      path_comps.unshift("www") if path_comps.length == 2 # make 'yahoo.com' into 'www.yahoo.com'
+      path_comps = uri.host.scan(/[^.]+/) # separate domain between dots ... example.com into [example com]
+      path_comps.unshift("www") if path_comps.length == 2 # make 'example.com' into 'www.example.com'
       domain = path_comps.join(".")
     end
 
+    # origin is "http://www.example.com" or "file://"
     @origin = "#{uri.scheme}://#{domain}"
 
     # one service instance can have multiple subscribers 
-    # (could be subscribing to different topics)
-    @subscribers = {}
+    @subscribers = []
     
-    # create a unique id so subscribers can be removed
-    @@count = 0
-
-    # unqiue object to signal data types that shouldn't be transfered through postMessage
+    # unique object to signal data types that shouldn't be transfered through postMessage
     @@DontCopy = Object.new
   end  
   
+  
+  # Log through BrowserPlus and text file if you need to
   def dbg(o)
     msg = o.class.name == "String" ? o : o.pretty_inspect
     msg = "#{self}: #{msg}"
@@ -67,36 +69,22 @@ class PubSub
     File.open("/tmp/dbg.txt", 'a') { |f| f.puts(msg) }
   end
 
-  def addListener(bp, args)
-    # create unique id
-    @@count += 1
-    id = "cb_#{@@count}" 
-
-    # hash of all subscribers
-    @subscribers[id] = {"filter" => args["origin"] || "*", "callback" => args["receiver"]}
-
-    # become an observer
-    if (@subscribers.count == 1)
-      PSData.instance.add_observer(self)
-    end
-  end
 
   # Copies data object allowing only following types:
-  #   Hash, Array, String, Fixnum, Float, TrueClass, FalseClass
-  # Meaning that it strips out
-  #   Pathname and BPCallback
-  def dupData(data)
+  #     Hash, Array, String, Fixnum, Float, TrueClass, FalseClass
+  # (Meaning that "Pathname" and "BPCallback" are stripped out)
+  def sanitize(data)
     case data
     when Hash
       v = {}
       data.each do |key, value|
-        dv = dupData(value)
+        dv = sanitize(value)
         v[key] = dv if (dv != @@DontCopy)
       end
     when Array
       v = []
       data.each do |value|
-        dv = dupData(value)
+        dv = sanitize(value)
         v.push(dv) if (dv != @@DontCopy)
       end
     when String, Fixnum, Float, TrueClass, FalseClass, NilClass
@@ -105,22 +93,13 @@ class PubSub
       v = @@DontCopy
     end
 
-    v # return v
-  end
-
-  def postMessage(bp, args)
-    data = dupData(args["data"])
-    target = args["targetOrigin"]
-    if (data == @@DontCopy)
-      bp.error("DataTransferError", "Objects of that type cannot be sent through postMessage")
-    else
-      PSData.instance.notify_observers(data, @origin, target)
-      bp.complete(true)
-    end
+    return v
   end
 
 
+  # Called via PSObservable
   def update(data, msgOrigin, msgTarget)
+    # data - message to send
     # msgOrigin - where message is from
     # msgTarget - where message should be sent (could be '*')
     # @origin - where this client lives
@@ -128,17 +107,39 @@ class PubSub
     # if message is to all or to *this* client's origin
     if (msgTarget == '*' || msgTarget == @origin)
       # for each subscriber on *this* client
-      @subscribers.dup.each_key do |key|
-        listenerFilter = @subscribers[key]["filter"]
-        listenerCallback = @subscribers[key]["callback"]
-
+      @subscribers.dup.each do |s|
         # bonus (not HTML5) - allow client to filter here and not in JavaScript
-        if (listenerFilter == "*" || listenerFilter == msgOrigin)
-          listenerCallback.invoke({"data"=> data, "origin" => msgOrigin})
+        if (s["filter"] == "*" || s["filter"] == msgOrigin)
+          s["callback"].invoke({"data"=> data, "origin" => msgOrigin})
         end #if 
       end #each_key
     end #if
   end #def
+
+
+  # Visible to JavaScript - register as a listener
+  def addListener(bp, args)
+    @subscribers.push({"filter" => args["origin"] || "*", "callback" => args["receiver"]})
+
+    # become an observer
+    PSObservable.instance.add_observer(self) if (@subscribers.count == 1)
+    
+    # NEVER CALL bp.complete or callback will become invalid
+  end
+
+
+  # Visible to JavaScript - send a message
+  def postMessage(bp, args)
+    target = args["targetOrigin"] # where message should be sent
+    data = sanitize(args["data"])  # sanitize data
+
+    if (data == @@DontCopy)
+      bp.error("DataTransferError", "Objects of that type cannot be sent through postMessage")
+    else
+      PSObservable.instance.notify_observers(data, @origin, target)
+      bp.complete(true)
+    end
+  end
 
 end #class
   
@@ -148,7 +149,7 @@ rubyCoreletDefinition = {
   'name' => "PublishSubscribe",  
   'major_version' => 0,  
   'minor_version' => 3,  
-  'micro_version' => 0,  
+  'micro_version' => 1,  
   'documentation' => 'A cross document message service that allows JavaScript to send and receive messages between ' + 
     'web pages within one or more browsers (cross document + cross process).',
   'functions' =>  
@@ -192,7 +193,6 @@ rubyCoreletDefinition = {
           'documentation' => 'The origin specifies where to send the message to.  Options are either an URI like ' + 
             '"http://example.org" or "*" to pass it to all listeners.',
           'required' => true
-          
         }
       ]
     }
