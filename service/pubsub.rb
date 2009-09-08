@@ -147,9 +147,9 @@ end #class
 rubyCoreletDefinition = {  
   'class' => "PubSub",  
   'name' => "PublishSubscribe",  
-  'major_version' => 0,  
-  'minor_version' => 3,  
-  'micro_version' => 1,  
+  'major_version' => 1,  
+  'minor_version' => 0,  
+  'micro_version' => 0,  
   'documentation' => 'A cross document message service that allows JavaScript to send and receive messages between ' + 
     'web pages within one or more browsers (cross document + cross process).',
   'functions' =>  
