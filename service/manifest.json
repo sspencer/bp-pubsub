@@ -1,17 +1,17 @@
-{  
-  "type": "dependent",  
-  "uses": {  
-    "corelet": "RubyInterpreter",  
-    "version": "4",  
-    "minversion": "4.2.5"  
-  },  
-  "arguments": {  
-    "ScriptFile": "pubsub.rb"  
-  },  
-  "strings": {  
-    "en": {  
-      "title": "PublishSubscribe",   
-      "summary": "Local publish/subscribe communication between browserplus services."  
-    }  
-  }  
+{
+  "type": "dependent",
+  "uses": {
+    "corelet": "RubyInterpreter",
+    "version": "4",
+    "minversion": "4.2.5"
+  },
+  "arguments": {
+    "ScriptFile": "pubsub.rb"
+  },
+  "strings": {
+    "en": {
+      "title": "PublishSubscribe",
+      "summary": "Local publish/subscribe communication between browserplus services."
+    }
+  }
 }

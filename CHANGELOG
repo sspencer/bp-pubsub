@@ -5,13 +5,13 @@ Version 0.3.1
   * Clean up Ruby code with simplification, reorganization, and documentation
 
 Version 0.3.0
-  * added mandatory "targetOrigin" to postMessge().  This sends message to listeners on 
+  * added mandatory "targetOrigin" to postMessge().  This sends message to listeners on
     specified domain only.
   * Note that "origin" in addListener is not per HTML5, but a convenience filter so you
     don't have to do the same in JavaScript.
 
 Version 0.2.1
-  * postMessage strips out all non "data" types ... allowing: (Object, Array, String, Boolean, 
+  * postMessage strips out all non "data" types ... allowing: (Object, Array, String, Boolean,
     Integer, Float, Boolean, Null).  In other words, strips out BrowserPlus File and Callback
     objects.
 

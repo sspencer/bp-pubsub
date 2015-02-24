@@ -15,22 +15,22 @@ class BPProxy
   def complete(val)
    # puts "COMPLETE: #{val}"
   end
-  
+
   def error(error, verbose)
     puts "ERROR: #{error}: #{verbose}"
   end
 end
- 
+
 class Callback
   def initialize(obj)
     @obj = obj
   end
-  
+
   def invoke(val)
     puts "CALLBACK(#{@obj}): #{val.pretty_inspect}"
   end
 end
- 
+
 puts "==== START ===="
 
 bp = BPProxy.new
